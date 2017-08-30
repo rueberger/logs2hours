@@ -36,3 +36,33 @@ def filter_git_logs(repo_name, author_name,
                 filtered_commits.append(commit)
 
     return filtered_commits
+
+
+def to_gantt_rec(commits, task_name,  commit_duration=30):
+    """ Create and return the dataframe record expected by plotly's gantt plot
+
+    Args:
+      commits: list of commit records
+      task_name: name of task to use, generally name of repo
+      commit_duration: duration to give each commit - in minutes
+
+    Returns:
+      gantt_recs:
+    """
+    gantt_recs = []
+    for commit in commits:
+        commit_dt = datetime.fromtimestamp(commit['author']['date'])
+        end_dt = commit_dt + timedelta(minutes=commit_duration)
+        commit_rec = {
+            'Task': task_name,
+            'Start': "{year}-{month:0>2d}-{day:0>2d} {hour}:{minute:0>2d}:{second:0>2d}".format(
+                year=commit_dt.year, month=commit_dt.month, day=commit_dt.day,
+                hour=commit_dt.hour, minute=commit_dt.minute, second=commit_dt.second
+            ),
+            'Finish': "{year}-{month:0>2d}-{day:0>2d} {hour}:{minute:0>2d}:{second:0>2d}".format(
+                year=end_dt.year, month=end_dt.month, day=end_dt.day,
+                hour=end_dt.hour, minute=end_dt.minute, second=end_dt.second
+            )
+        }
+        gantt_recs.append(commit_rec)
+    return gantt_recs
