@@ -101,19 +101,28 @@ def extract_user_messages_from_slack_rec(user_id):
     authored_messages = []
     log_path = '{}/logs/slack'.format(my_abs_path)
     for channel_name in os.listdir(log_path):
-        # continues some top level jsons
-        if channel_name.endswith('.json'):
-            continue
         channel_path = log_path + '/' + channel_name
+        # there are some top level jsons to ignore
+        if not os.path.isdir(channel_path):
+            continue
         for day_rec_name in os.listdir(channel_path):
             rec_path = channel_path + '/' + day_rec_name
             with open(rec_path, 'r') as rec_file:
                 day_rec = json.load(rec_file)
                 for atomic_rec in day_rec:
-                    if atomic_rec['type'] == 'message' and atomic_rec['user'] == user_id:
-                        atomic_rec['channel'] = channel_name
-                        authored_messages.append(atomic_rec)
-
+                    atomic_rec['channel'] = channel_name
+                    if atomic_rec['type'] == 'message':
+                        if 'subtype' not in atomic_rec:
+                            if atomic_rec['user'] == user_id:
+                                authored_messages.append(atomic_rec)
+                        elif atomic_rec['subtype'] == 'file_comment':
+                            if atomic_rec['comment']['user'] == user_id:
+                                authored_messages.append(atomic_rec)
+                        else:
+                            # bot_message subtypes don't have a user
+                            if 'user' in atomic_rec:
+                                if atomic_rec['user'] == user_id:
+                                    authored_messages.append(atomic_rec)
     return authored_messages
 
 def slack_to_gantt_rec(slack_recs, message_duration=1):
