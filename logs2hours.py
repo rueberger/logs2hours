@@ -54,8 +54,15 @@ def to_gantt_rec(commits, task_name,  commit_duration=30):
         commit_dt = datetime.fromtimestamp(commit['author']['date'])
         end_dt = commit_dt + timedelta(minutes=commit_duration)
         description = 'Message: {}'.format(commit['message'])
+        tot_change = 0
         for file_change_rec in commit['changes']:
             description += '<br>   {}: +{}; -{}'.format(file_change_rec[2], file_change_rec[0], file_change_rec[1])
+            # don't count notebook changes the same as code changes
+            if file_change_rec[2].endswith('.ipynb'):
+                # let's just give each notebook push an arbitrary 10 change units
+                tot_change += 10
+            else:
+                tot_change += int(file_change_rec[0]) + int(file_change_rec[1])
         commit_rec = {
             'Task': task_name,
             'Start': "{year}-{month:0>2d}-{day:0>2d} {hour}:{minute:0>2d}:{second:0>2d}".format(
@@ -66,7 +73,8 @@ def to_gantt_rec(commits, task_name,  commit_duration=30):
                 year=end_dt.year, month=end_dt.month, day=end_dt.day,
                 hour=end_dt.hour, minute=end_dt.minute, second=end_dt.second
             ),
-            'Description': description
+            'Description': description,
+            'TotalChanges': tot_change
         }
         gantt_recs.append(commit_rec)
     return gantt_recs
