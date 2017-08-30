@@ -38,7 +38,7 @@ def filter_git_logs(repo_name, author_name,
     return filtered_commits
 
 
-def commits_to_gantt_rec(commits, task_name,  commit_duration=30):
+def git_to_gantt_rec(commits, task_name,  commit_duration=30):
     """ Create and return the dataframe record expected by plotly's gantt plot
 
     Args:
@@ -114,3 +114,5 @@ def extract_user_messages_from_slack_rec(user_id):
                         authored_messages.append(atomic_rec)
 
     return authored_messages
+
+def slack_to_gantt_rec()
