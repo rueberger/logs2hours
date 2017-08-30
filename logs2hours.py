@@ -4,7 +4,11 @@
 import os
 import json
 
+import plotly.figure_factory as ff
+
 from datetime import datetime, timedelta
+
+
 
 def filter_git_logs(repo_name, author_name,
                     start_date=datetime.now() - timedelta(1),
@@ -163,3 +167,29 @@ def slack_to_gantt_rec(slack_recs, message_duration=1):
         }
         gantt_recs.append(gantt_rec)
     return gantt_recs
+
+def make_gantt_figure(repos, start_date, end_date, slack_user_id, author_name):
+    """ Run everything and return the plotly gantt figure
+
+    Args:
+      repos: list of repo names, which should have their logs jumped to json already in logs2hours/logs/git
+      start_date: datetime start
+      end_date: datetime end
+      slack_user_id: id of desired user, not their name - str
+        look in the dumps to find this
+      author_name: git author name
+
+    Returns:
+      gantt_figure: pass to iplot
+    """
+    commit_recs = []
+    for repo in repos:
+        commits = filter_git_logs(repo, author_name, start_date=start_date, end_date=end_date)
+            commit_recs.extend(git_to_gantt_rec(commits, repo, 1))
+
+    authored_messages = extract_user_messages_from_slack_rec(slack_user_id, start_date=start_date, end_date=end_date)
+    slack_gantt_recs = slack_to_gantt_rec(authored_messages)
+    all_recs = commit_recs + slack_gantt_recs
+
+    gantt_fig = ff.create_gantt(all_recs, group_tasks=True, index_col='TotalChanges', show_colorbar=True)
+    return gantt_fig
