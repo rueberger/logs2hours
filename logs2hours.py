@@ -78,3 +78,39 @@ def to_gantt_rec(commits, task_name,  commit_duration=30):
         }
         gantt_recs.append(commit_rec)
     return gantt_recs
+
+def extract_user_messages_from_slack_rec(user_id):
+    """ Extracts all messages authored by user from the slack dump
+    Slack dump must be in logs2hours/slack/
+
+    Args:
+      user_id: id of desired user, not their name - str
+        look in the dumps to find this
+
+    Returns:
+      authored_messages: list of all messages ever authored by the user
+       elements are message records (dictionaries )that have at least these keys:
+         - ts
+         - type
+         - user
+
+    """
+    # absolute path to this file
+    my_abs_path = os.path.dirname(os.path.abspath(__file__))
+
+    authored_messages = []
+    log_path = '{}/logs/slack'.format(my_abs_path)
+    for channel_name in os.listdir(log_path):
+        # continues some top level jsons
+        if channel_name.endswith('.json'):
+            continue
+        channel_path = log_path + '/' + channel_name
+        for day_rec_name in os.listdir(channel_path):
+            rec_path = channel_path + '/' + day_rec_name
+            with open(rec_path, 'r') as rec_file:
+                day_rec = json.load(rec_file)
+                for atomic_rec in day_rec:
+                    if atomic_rec['type'] == 'message' and atomic_rec['user'] == user_id:
+                        authored_messages.append(atomic_rec)
+
+    return authored_messages
