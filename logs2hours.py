@@ -111,8 +111,38 @@ def extract_user_messages_from_slack_rec(user_id):
                 day_rec = json.load(rec_file)
                 for atomic_rec in day_rec:
                     if atomic_rec['type'] == 'message' and atomic_rec['user'] == user_id:
+                        atomic_rec['channel'] = channel_name
                         authored_messages.append(atomic_rec)
 
     return authored_messages
 
-def slack_to_gantt_rec()
+def slack_to_gantt_rec(slack_recs, message_duration=1):
+    """ Create and return the dataframe record expected by plotly's gantt plot
+
+    Args:
+      slack_recs: list of message records
+      message_duration: duration to give each message - in minutes
+
+    Returns:
+      gantt_recs
+    """
+    gantt_recs = []
+    for message_rec in slack_recs:
+        message_dt = datetime.fromtimestamp(float(message_rec['ts']))
+        end_dt = message_dt + timedelta(minutes=message_duration)
+        description = message_rec['text']
+        gantt_rec = {
+            'Task': message_rec['channel'],
+            'Start': "{year}-{month:0>2d}-{day:0>2d} {hour}:{minute:0>2d}:{second:0>2d}".format(
+                year=message_dt.year, month=message_dt.month, day=message_dt.day,
+                hour=message_dt.hour, minute=message_dt.minute, second=message_dt.second
+            ),
+            'Finish': "{year}-{month:0>2d}-{day:0>2d} {hour}:{minute:0>2d}:{second:0>2d}".format(
+                year=end_dt.year, month=end_dt.month, day=end_dt.day,
+                hour=end_dt.hour, minute=end_dt.minute, second=end_dt.second
+            ),
+            'Description': description,
+            'TotalChanges': 0
+        }
+        gantt_recs.append(gantt_rec)
+    return gantt_recs
