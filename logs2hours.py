@@ -24,7 +24,7 @@ def filter_git_logs(repo_name, author_name,
     """
     # absolute path to this file
     my_abs_path = os.path.dirname(os.path.abspath(__file__))
-    with open('{}/logs/git/{}'.format(my_abs_path, repo_name), 'r') as log_file:
+    with open('{}/logs/git/{}.json'.format(my_abs_path, repo_name), 'r') as log_file:
         log_rec = json.load(log_file)
 
     filtered_commits = []
