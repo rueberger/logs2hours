@@ -38,7 +38,7 @@ def filter_git_logs(repo_name, author_name,
     return filtered_commits
 
 
-def to_gantt_rec(commits, task_name,  commit_duration=30):
+def commits_to_gantt_rec(commits, task_name,  commit_duration=30):
     """ Create and return the dataframe record expected by plotly's gantt plot
 
     Args:
