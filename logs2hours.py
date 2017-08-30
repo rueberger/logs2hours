@@ -55,7 +55,7 @@ def to_gantt_rec(commits, task_name,  commit_duration=30):
         end_dt = commit_dt + timedelta(minutes=commit_duration)
         description = 'Message: {}'.format(commit['message'])
         for file_change_rec in commit['changes']:
-            description += '\n{}: +{}; -{}'.format(file_change_rec[2], file_change_rec[0], file_change_rec[1])
+            description += '<br>   {}: +{}; -{}'.format(file_change_rec[2], file_change_rec[0], file_change_rec[1])
         commit_rec = {
             'Task': task_name,
             'Start': "{year}-{month:0>2d}-{day:0>2d} {hour}:{minute:0>2d}:{second:0>2d}".format(
