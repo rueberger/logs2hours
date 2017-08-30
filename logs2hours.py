@@ -79,13 +79,19 @@ def git_to_gantt_rec(commits, task_name,  commit_duration=30):
         gantt_recs.append(commit_rec)
     return gantt_recs
 
-def extract_user_messages_from_slack_rec(user_id):
+def extract_user_messages_from_slack_rec(user_id,
+                                         start_date=datetime.now() - timedelta(1),
+                                         end_date=datetime.now()):
     """ Extracts all messages authored by user from the slack dump
     Slack dump must be in logs2hours/slack/
 
     Args:
       user_id: id of desired user, not their name - str
         look in the dumps to find this
+      start_date: (optional) - datetime
+        24 hours ago if unspecified
+      end_date: (optional) - datetime
+        current time if unspecified
 
     Returns:
       authored_messages: list of all messages ever authored by the user
@@ -111,18 +117,20 @@ def extract_user_messages_from_slack_rec(user_id):
                 day_rec = json.load(rec_file)
                 for atomic_rec in day_rec:
                     atomic_rec['channel'] = channel_name
-                    if atomic_rec['type'] == 'message':
-                        if 'subtype' not in atomic_rec:
-                            if atomic_rec['user'] == user_id:
-                                authored_messages.append(atomic_rec)
-                        elif atomic_rec['subtype'] == 'file_comment':
-                            if atomic_rec['comment']['user'] == user_id:
-                                authored_messages.append(atomic_rec)
-                        else:
-                            # bot_message subtypes don't have a user
-                            if 'user' in atomic_rec:
+                    rec_time = datetime.fromtimestamp(float(atomic_rec['ts']))
+                    if start_date <= rec_time <= end_date:
+                        if atomic_rec['type'] == 'message':
+                            if 'subtype' not in atomic_rec:
                                 if atomic_rec['user'] == user_id:
                                     authored_messages.append(atomic_rec)
+                            elif atomic_rec['subtype'] == 'file_comment':
+                                if atomic_rec['comment']['user'] == user_id:
+                                    authored_messages.append(atomic_rec)
+                            else:
+                                # bot_message subtypes don't have a user
+                                if 'user' in atomic_rec:
+                                    if atomic_rec['user'] == user_id:
+                                        authored_messages.append(atomic_rec)
     return authored_messages
 
 def slack_to_gantt_rec(slack_recs, message_duration=1):
