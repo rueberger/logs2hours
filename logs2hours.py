@@ -178,50 +178,61 @@ def slack_to_gantt_rec(slack_recs, message_duration=1):
         gantt_recs.append(gantt_rec)
     return gantt_recs
 
-def make_gantt_figure(repos, start_date, end_date, slack_user_id, author_name):
+def make_gantt_figure(start_date, end_date, work_spec):
     """ Run everything and return the plotly gantt figure
 
     Args:
-      repos: list of repo names, which should have their logs jumped to json already in logs2hours/logs/git
       start_date: datetime start
       end_date: datetime end
-      slack_user_id: id of desired user, not their name - str
-        look in the dumps to find this
-      author_name: git author name
+      work_spec: spec as returned by make_spec
 
     Returns:
       gantt_figure: pass to iplot
     """
     commit_recs = []
-    for repo in repos:
-        commits = filter_git_logs(repo, author_name, start_date=start_date, end_date=end_date)
+    for repo in work_spec['repos']:
+        commits = filter_git_logs(repo,
+                                  work_spec['author_name'],
+                                  start_date=start_date,
+                                  end_date=end_date
+        )
         commit_recs.extend(git_to_gantt_rec(commits, repo, 1))
 
-    authored_messages = extract_user_messages_from_slack_rec(slack_user_id, start_date=start_date, end_date=end_date)
+    authored_messages = extract_user_messages_from_slack_rec(
+        work_spec['slack_uid'], start_date=start_date, end_date=end_date
+    )
     slack_gantt_recs = slack_to_gantt_rec(authored_messages)
     all_recs = commit_recs + slack_gantt_recs
 
     gantt_fig = ff.create_gantt(all_recs, group_tasks=True, index_col='TotalChanges', show_colorbar=True)
     return gantt_fig
 
-def summarize_day(repos, start_date, end_date, slack_user_id, author_name):
+def summarize_day(year, month, day, work_spec):
     """ Summarize the days events
+    Days go from 4am-4am
 
     Args:
-      repos: list of repo names, which should have their logs jumped to json already in logs2hours/logs/git
-      start_date: datetime start
-      end_date: datetime end
-      slack_user_id: id of desired user, not their name - str
-        look in the dumps to find this
-      author_name: git author name
+      year
+      month
+      day
+      work_spec: spec as returned by make_spec
     """
+    start_date = datetime(year, month, day, 4)
+    end_date = start_date + timedelta(1)
+
     # keyed by repo
     commit_recs = {}
-    for repo in repos:
-        commits = filter_git_logs(repo, author_name, start_date=start_date, end_date=end_date)
+    for repo in work_spec['repos']:
+        commits = filter_git_logs(repo,
+                                  work_spec['author_name'],
+                                  start_date=start_date,
+                                  end_date=end_date
+        )
         commit_recs[repo] = commits
 
-    authored_messages = extract_user_messages_from_slack_rec(slack_user_id, start_date=start_date, end_date=end_date)
+    authored_messages = extract_user_messages_from_slack_rec(
+        work_spec['slack_uid'], start_date=start_date, end_date=end_date
+    )
 
     # keyed by channel
     slack_messages = {}
@@ -270,8 +281,30 @@ def summarize_day(repos, start_date, end_date, slack_user_id, author_name):
     print()
     print("Event summary:")
     print("  Repos:")
-    for repo, commits in repos.items():
+    for repo, commits in work_spec['repos'].items():
         print("{}: {} commits".format(repo, len(commits)))
     print("  Messages:")
     for channel, messages in slack_messages.items():
         print("{}: {} messages".format(channel, len(messages)))
+
+def make_spec(repos, slack_user_id, author_name):
+    """ Format and return spec specifying what to analyze
+    Convenience method: spec used by several other methods here
+
+    Args:
+      repos: list of repo names, which should have their logs jumped to json already in logs2hours/logs/git
+      start_date: datetime start
+      end_date: datetime end
+      slack_user_id: id of desired user, not their name - str
+        look in the dumps to find this
+      author_name: git author name
+
+    Returns:
+      spec
+    """
+    spec = {
+        'repos': repos,
+        'slack_uid': slack_user_id,
+        'author_name': author_name
+    }
+    return spec
