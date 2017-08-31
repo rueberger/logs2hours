@@ -238,7 +238,10 @@ def summarize_day(year, month, day, work_spec):
     slack_messages = {}
     for message in authored_messages:
         channel = message['channel']
-        slack_messages[channel] = message
+        if channel in slack_messages:
+            slack_messages[channel].append(message)
+        else:
+            slack_messages[channel] = [message]
 
     # find first and last events
     first_commit = datetime.now()
