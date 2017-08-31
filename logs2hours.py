@@ -4,6 +4,8 @@
 import os
 import json
 
+import numpy as np
+
 import plotly.figure_factory as ff
 
 from datetime import datetime, timedelta
@@ -284,11 +286,55 @@ def summarize_day(year, month, day, work_spec):
     print()
     print("Event summary:")
     print("  Repos:")
-    for repo, commits in work_spec['repos'].items():
-        print("{}: {} commits".format(repo, len(commits)))
+    for repo, commits in commit_recs.items():
+        if len(commits) > 0:
+            print("    {}: {} commits".format(repo, len(commits)))
     print("  Messages:")
     for channel, messages in slack_messages.items():
-        print("{}: {} messages".format(channel, len(messages)))
+        if len(messages):
+            print("    {}: {} messages".format(channel, len(messages)))
+
+def estimate_hours(timestamps, sess_sep=2, sess_extra=0.5):
+    """ Estimate hours from list of commits
+
+    Args:
+      timestamps: list of datetime objects
+        not assumed to be sorted
+      sess_sep: commits closer together this are considered part of the same session - in hours
+      sess_extra: extra time to add to beginning of session - in hours
+
+    Returns:
+      total_hours: estimated total hours - float
+      sessions: List of computed session partitions [[start_datetime, end_datetime]]
+    """
+    # [N]
+    timestamps = sorted(timestamps)
+    # time deltas between adjacent events
+    # [N - 1]
+    time_diffs = -np.diff(timestamps)
+    max_sep = timedelta(hours=sess_sep)
+
+
+    # calculate sessions
+    sessions = [[timestamps[0], None]]
+    for timestamp, delta_t in zip(timestamps[1:], time_diffs):
+        if delta_t < max_sep:
+            sessions[-1][1] = timestamp
+        else:
+            sessions.append([timestamp, None])
+    sessions[-1][1] = timestamps[-1]
+
+    # offset left edge of sessons by sess_extra
+    fudge_offset = timedelta(hours=sess_extra)
+    sessions = [[sess[0] - fudge_offset, sess[1]] for sess in sessions]
+
+    # sum hours
+    tot_hours = 0
+    for session in sessions:
+        tot_hours += (session[1] - session[0]).total_seconds() / 3600
+
+    return tot_hours, sessions
+
 
 def make_spec(repos, slack_user_id, author_name):
     """ Format and return spec specifying what to analyze
