@@ -7,8 +7,11 @@ import json
 import plotly.figure_factory as ff
 
 from datetime import datetime, timedelta
+from warnings import warn
 
-
+# horribly incomplete of file extensions of programming language source files
+# you should add the extension of all files whose lines you want to be counted
+CODE_FILE_EXTENSIONS = ['py', 'c', 'h', 'tex']
 
 def filter_git_logs(repo_name, author_name,
                     start_date=datetime.now() - timedelta(1),
@@ -61,12 +64,19 @@ def git_to_gantt_rec(commits, task_name,  commit_duration=30):
         tot_change = 0
         for file_change_rec in commit['changes']:
             description += '<br>   {}: +{}; -{}'.format(file_change_rec[2], file_change_rec[0], file_change_rec[1])
+            dot_split = file_change_rec[2].split('.')
+            if len(dot_split) > 0:
+                extension = dot_split[-1]
+            else:
+                extension = ''
             # don't count notebook changes the same as code changes
-            if file_change_rec[2].endswith('.ipynb'):
+            if extension == 'ipynb':
                 # let's just give each notebook push an arbitrary 10 change units
                 tot_change += 10
-            else:
+            if extension in CODE_FILE_EXTENSIONS:
                 tot_change += int(file_change_rec[0]) + int(file_change_rec[1])
+            else:
+                warn("Don't know what to do about file extension '{}'; ignoring".format(extension))
         commit_rec = {
             'Task': task_name,
             'Start': "{year}-{month:0>2d}-{day:0>2d} {hour}:{minute:0>2d}:{second:0>2d}".format(
@@ -255,3 +265,6 @@ def summarize_day(repos, start_date, end_date, slack_user_id, author_name):
     print("Last message: {hour:0>2d}:{minute:0>2d}".format(
         hour=last_message.hour, minute=last_message.minute
     ))
+    print()
+    print('='*80)
+    print()
