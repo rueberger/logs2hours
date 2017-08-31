@@ -219,7 +219,7 @@ def make_gantt_figure(start_date, end_date, work_spec, estimate_hours=True):
         for message in authored_messages:
             timestamps.append(datetime.fromtimestamp(float(message['ts'])))
 
-        tot_hours, sessions = estimate_hours(timestamps)
+        tot_hours, sessions = calc_estimated_hours(timestamps)
         session_recs = []
         for session in sessions:
             session_recs.append({
@@ -335,7 +335,7 @@ def summarize_day(year, month, day, work_spec):
         if len(messages):
             print("    {}: {} messages".format(channel, len(messages)))
 
-def estimate_hours(timestamps, sess_sep=2, sess_extra=0.5):
+def calc_estimated_hours(timestamps, sess_sep=2, sess_extra=0.5):
     """ Estimate hours from list of commits
 
     Args:
