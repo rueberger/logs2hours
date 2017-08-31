@@ -240,12 +240,12 @@ def make_gantt_figure(start_date, end_date, work_spec, estimate_hours=True):
     gantt_fig = ff.create_gantt(all_recs, group_tasks=True, index_col='TotalChanges', show_colorbar=True)
 
 
-    gantt_fig['layout']['title'] = "{year1}-{month1:0>2d}-{day1:0>2d}-{year2}-{month2:0>2d}-{day2:0>2d}".format(
+    gantt_fig['layout']['title'] = "{year1}/{month1:0>2d}/{day1:0>2d} - {year2}/{month2:0>2d}/{day2:0>2d}".format(
         year1=start_date.year, month1=start_date.month, day1=start_date.day,
         year2=end_date.year, month2=end_date.month, day2=end_date.day
     )
     if estimate_hours:
-        gantt_fig['layout']['title'] += ' Total estimated hours >= {}',format(tot_hours)
+        gantt_fig['layout']['title'] += '<br> Total estimated hours >= {}'.format(tot_hours)
 
 
     return gantt_fig
