@@ -185,7 +185,7 @@ def make_gantt_figure(repos, start_date, end_date, slack_user_id, author_name):
     commit_recs = []
     for repo in repos:
         commits = filter_git_logs(repo, author_name, start_date=start_date, end_date=end_date)
-            commit_recs.extend(git_to_gantt_rec(commits, repo, 1))
+        commit_recs.extend(git_to_gantt_rec(commits, repo, 1))
 
     authored_messages = extract_user_messages_from_slack_rec(slack_user_id, start_date=start_date, end_date=end_date)
     slack_gantt_recs = slack_to_gantt_rec(authored_messages)
@@ -193,3 +193,65 @@ def make_gantt_figure(repos, start_date, end_date, slack_user_id, author_name):
 
     gantt_fig = ff.create_gantt(all_recs, group_tasks=True, index_col='TotalChanges', show_colorbar=True)
     return gantt_fig
+
+def summarize_day(repos, start_date, end_date, slack_user_id, author_name):
+    """ Summarize the days events
+
+    Args:
+      repos: list of repo names, which should have their logs jumped to json already in logs2hours/logs/git
+      start_date: datetime start
+      end_date: datetime end
+      slack_user_id: id of desired user, not their name - str
+        look in the dumps to find this
+      author_name: git author name
+    """
+    # keyed by repo
+    commit_recs = {}
+    for repo in repos:
+        commits = filter_git_logs(repo, author_name, start_date=start_date, end_date=end_date)
+        commit_recs[repo] = commits
+
+    authored_messages = extract_user_messages_from_slack_rec(slack_user_id, start_date=start_date, end_date=end_date)
+
+    # keyed by channel
+    slack_messages = {}
+    for message in authored_messages:
+        channel = message['channel']
+        slack_messages[channel] = message
+
+    # find first and last events
+    first_commit = datetime.now()
+    last_commit = datetime(2015, 1, 1)
+
+    first_message = datetime.now()
+    last_message = datetime(2015, 1, 1)
+
+    for commits in commit_recs.values():
+        for commit in commits:
+            commit_dt = datetime.fromtimestamp(commit['author']['date'])
+            if commit_dt < first_commit:
+                first_commit = commit_dt
+            if last_commit < commit_dt:
+                last_commit = commit_dt
+
+    for messages in slack_messages.values():
+        for message in messages:
+            message_dt = datetime.fromtimestamp(float(message['ts']))
+            if message_dt < first_message:
+                first_message = message_dt
+            if last_message <  message_dt:
+                last_message = message_dt
+
+    print("First commit: {hour:0>2d}:{minute:0>2d}".format(
+        hour=first_commit.hour, minute=first_commit.minute
+    ))
+    print("Last commit: {hour:0>2d}:{minute:0>2d}".format(
+        hour=last_commit.hour, minute=last_commit.minute
+    ))
+    print()
+    print("First message: {hour:0>2d}:{minute:0>2d}".format(
+        hour=first_message.hour, minute=first_message.minute
+    ))
+    print("Last message: {hour:0>2d}:{minute:0>2d}".format(
+        hour=last_message.hour, minute=last_message.minute
+    ))
