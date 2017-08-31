@@ -180,25 +180,29 @@ def slack_to_gantt_rec(slack_recs, message_duration=1):
         gantt_recs.append(gantt_rec)
     return gantt_recs
 
-def make_gantt_figure(start_date, end_date, work_spec):
+def make_gantt_figure(start_date, end_date, work_spec, estimate_hours=True):
     """ Run everything and return the plotly gantt figure
 
     Args:
       start_date: datetime start
       end_date: datetime end
       work_spec: spec as returned by make_spec
+      estimate_hours: if True, also estimated hours and plot sessions
 
     Returns:
       gantt_figure: pass to iplot
     """
     commit_recs = []
+    raw_commits = []
     for repo in work_spec['repos']:
         commits = filter_git_logs(repo,
                                   work_spec['author_name'],
                                   start_date=start_date,
                                   end_date=end_date
         )
+        raw_commits.extend(commits)
         commit_recs.extend(git_to_gantt_rec(commits, repo, 1))
+
 
     authored_messages = extract_user_messages_from_slack_rec(
         work_spec['slack_uid'], start_date=start_date, end_date=end_date
@@ -206,7 +210,44 @@ def make_gantt_figure(start_date, end_date, work_spec):
     slack_gantt_recs = slack_to_gantt_rec(authored_messages)
     all_recs = commit_recs + slack_gantt_recs
 
+    if estimate_hours:
+        # collect timestamps into single list
+        timestamps = []
+        for commit in raw_commits:
+            timestamps.append(datetime.fromtimestamp(commit['author']['date']))
+
+        for message in authored_messages:
+            timestamps.append(datetime.fromtimestamp(float(message['ts'])))
+
+        tot_hours, sessions = estimate_hours(timestamps)
+        session_recs = []
+        for session in sessions:
+            session_recs.append({
+                'Task': 'Sessions',
+                'Start':  "{year}-{month:0>2d}-{day:0>2d} {hour}:{minute:0>2d}:{second:0>2d}".format(
+                    year=session[0].year, month=session[0].month, day=session[0].day,
+                    hour=session[0].hour, minute=session[0].minute, second=session[0].second
+                ),
+                'Finish': "{year}-{month:0>2d}-{day:0>2d} {hour}:{minute:0>2d}:{second:0>2d}".format(
+                    year=session[1].year, month=session[1].month, day=session[1].day,
+                    hour=session[1].hour, minute=session[1].minute, second=session[1].second
+                ),
+                'Description': 'Session',
+                'TotalChanges': 0
+            })
+        all_recs += session_recs
+
     gantt_fig = ff.create_gantt(all_recs, group_tasks=True, index_col='TotalChanges', show_colorbar=True)
+
+
+    gantt_fig['layout']['title'] = "{year1}-{month1:0>2d}-{day1:0>2d}-{year2}-{month2:0>2d}-{day2:0>2d}".format(
+        year1=start_date.year, month1=start_date.month, day1=start_date.day,
+        year2=end_date.year, month2=end_date.month, day2=end_date.day
+    )
+    if estimate_hours:
+        gantt_fig['layout']['title'] += ' Total estimated hours >= {}',format(tot_hours)
+
+
     return gantt_fig
 
 def summarize_day(year, month, day, work_spec):
