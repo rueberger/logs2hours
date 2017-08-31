@@ -268,3 +268,10 @@ def summarize_day(repos, start_date, end_date, slack_user_id, author_name):
     print()
     print('='*80)
     print()
+    print("Event summary:")
+    print("  Repos:")
+    for repo, commits in repos.items():
+        print("{}: {} commits".format(repo, len(commits)))
+    print("  Messages:")
+    for channel, messages in slack_messages.items():
+        print("{}: {} messages".format(channel, len(messages)))
