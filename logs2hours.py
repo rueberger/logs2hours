@@ -73,7 +73,7 @@ def git_to_gantt_rec(commits, task_name,  commit_duration=30):
             if extension == 'ipynb':
                 # let's just give each notebook push an arbitrary 10 change units
                 tot_change += 10
-            if extension in CODE_FILE_EXTENSIONS:
+            elif extension in CODE_FILE_EXTENSIONS:
                 tot_change += int(file_change_rec[0]) + int(file_change_rec[1])
             else:
                 warn("Don't know what to do about file extension '{}'; ignoring".format(extension))
