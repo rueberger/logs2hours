@@ -359,7 +359,7 @@ def calc_estimated_hours(timestamps, sess_sep=2, sess_extra=0.5):
     timestamps = sorted(timestamps)
     # time deltas between adjacent events
     # [N - 1]
-    time_diffs = -np.diff(timestamps)
+    time_diffs = np.diff(timestamps)
     max_sep = timedelta(hours=sess_sep)
 
     if len(timestamps) > 0:
