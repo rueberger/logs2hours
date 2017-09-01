@@ -353,7 +353,7 @@ def calc_estimated_hours(timestamps, sess_sep=2, sess_extra=0.5):
 
     Returns:
       total_hours: estimated total hours - float
-      sessions: List of computed session partitions [[start_datetime, end_datetime]]
+      sessions: List of computed session partitions [[start_datetime, end_datetime], ...]
     """
     # [N]
     timestamps = sorted(timestamps)
@@ -362,19 +362,21 @@ def calc_estimated_hours(timestamps, sess_sep=2, sess_extra=0.5):
     time_diffs = -np.diff(timestamps)
     max_sep = timedelta(hours=sess_sep)
 
+    if len(timestamps > 0):
+        # calculate sessions
+        sessions = [[timestamps[0], None]]
+        for timestamp, delta_t in zip(timestamps[1:], time_diffs):
+            if delta_t < max_sep:
+                sessions[-1][1] = timestamp
+            else:
+                sessions.append([timestamp, None])
+        sessions[-1][1] = timestamps[-1]
 
-    # calculate sessions
-    sessions = [[timestamps[0], None]]
-    for timestamp, delta_t in zip(timestamps[1:], time_diffs):
-        if delta_t < max_sep:
-            sessions[-1][1] = timestamp
-        else:
-            sessions.append([timestamp, None])
-    sessions[-1][1] = timestamps[-1]
-
-    # offset left edge of sessons by sess_extra
-    fudge_offset = timedelta(hours=sess_extra)
-    sessions = [[sess[0] - fudge_offset, sess[1]] for sess in sessions]
+        # offset left edge of sessons by sess_extra
+        fudge_offset = timedelta(hours=sess_extra)
+        sessions = [[sess[0] - fudge_offset, sess[1]] for sess in sessions]
+    else:
+        sessions = []
 
     # sum hours
     tot_hours = 0
