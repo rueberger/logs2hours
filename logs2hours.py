@@ -362,6 +362,9 @@ def calc_estimated_hours(timestamps, sess_sep=2, sess_extra=0.5):
     time_diffs = np.diff(timestamps)
     max_sep = timedelta(hours=sess_sep)
 
+    # offset left edge of sessons by sess_extra
+    fudge_offset = timedelta(hours=sess_extra)
+
     if len(timestamps) > 0:
         # calculate sessions
         sessions = [[timestamps[0], None]]
@@ -369,11 +372,13 @@ def calc_estimated_hours(timestamps, sess_sep=2, sess_extra=0.5):
             if delta_t < max_sep:
                 sessions[-1][1] = timestamp
             else:
-                sessions.append([timestamp, None])
+                if sessions[-1][1] is not None:
+                    sessions.append([timestamp, None])
+                # nomad commit > one sep away from everything
+                else:
+                    sessions[-1][1] = sessions[-1][0] + fudge_offset
         sessions[-1][1] = timestamps[-1]
 
-        # offset left edge of sessons by sess_extra
-        fudge_offset = timedelta(hours=sess_extra)
         sessions = [[sess[0] - fudge_offset, sess[1]] for sess in sessions]
     else:
         sessions = []
