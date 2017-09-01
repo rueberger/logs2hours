@@ -252,13 +252,17 @@ def make_gantt_figure(start_date, end_date, work_spec, estimate_hours=True):
 
 def summarize_day(year, month, day, work_spec):
     """ Summarize the days events
-    Days go from 4am-4am
+    Days go from 4am-4am.
+    Returns a gantt fig rec
 
     Args:
       year
       month
       day
       work_spec: spec as returned by make_spec
+
+    Returns:
+      gantt_fig
     """
     start_date = datetime(year, month, day, 4)
     end_date = start_date + timedelta(1)
@@ -334,6 +338,9 @@ def summarize_day(year, month, day, work_spec):
     for channel, messages in slack_messages.items():
         if len(messages):
             print("    {}: {} messages".format(channel, len(messages)))
+
+
+    return make_gantt_figure(start_date, end_date, work_spec)
 
 def calc_estimated_hours(timestamps, sess_sep=2, sess_extra=0.5):
     """ Estimate hours from list of commits
