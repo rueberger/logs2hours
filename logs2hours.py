@@ -246,7 +246,7 @@ def make_gantt_figure(start_date, end_date, work_spec, estimate_hours=True):
             year2=end_date.year, month2=end_date.month, day2=end_date.day
         )
         if estimate_hours:
-            gantt_fig['layout']['title'] += '<br> Total estimated hours >= {:2f}'.format(tot_hours)
+            gantt_fig['layout']['title'] += '<br> Total estimated hours >= {:.2f}'.format(tot_hours)
 
         return gantt_fig
 
