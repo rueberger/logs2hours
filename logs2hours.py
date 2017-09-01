@@ -362,7 +362,7 @@ def calc_estimated_hours(timestamps, sess_sep=2, sess_extra=0.5):
     time_diffs = -np.diff(timestamps)
     max_sep = timedelta(hours=sess_sep)
 
-    if len(timestamps > 0):
+    if len(timestamps) > 0:
         # calculate sessions
         sessions = [[timestamps[0], None]]
         for timestamp, delta_t in zip(timestamps[1:], time_diffs):
